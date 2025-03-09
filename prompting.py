@@ -7,7 +7,7 @@ from transformers import GemmaTokenizer, AutoModelForCausalLM
 from transformers import BitsAndBytesConfig
 
 from utils import set_random_seeds, compute_metrics, save_queries_and_records, compute_records
-from prompting_utils import read_schema, extract_sql_query, save_logs
+from prompting_utils import read_schema, extract_sql_query, save_logs, load_alignment_data
 from load_data import load_prompting_data
 
 DEVICE = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu') # you can add mps
@@ -37,7 +37,7 @@ def get_args():
     return args
 
 
-def create_prompt(sentence, k):
+def create_prompt(sentence, k, ptype=0, train_x=None, train_y=None, schema_info=None, alignment_dict=None):
     '''
     Function for creating a prompt for zero or few-shot prompting.
 
@@ -47,7 +47,59 @@ def create_prompt(sentence, k):
         * sentence (str): A text string
         * k (int): Number of examples in k-shot prompting
     '''
-    # TODO
+    schema_context = ""
+    if schema_info and 'tables' in schema_info:
+        schema_context = "Database Schema:\n"
+        for table_name, table_info in schema_info['tables'].items():
+            schema_context += f"Table: {table_name}\n"
+            if isinstance(table_info, dict) and 'columns' in table_info:
+                columns = table_info['columns']
+                schema_context += f"Columns: {', '.join(columns)}\n"
+            else:
+                schema_context += f"Columns: {', '.join(table_info)}\n"
+        schema_context += "\n"
+    
+    # Add alignment information
+    alignment_context = ""
+    if alignment_dict:
+        alignment_context = "Term Mappings (natural language -> database):\n"
+ 
+        for nl_term, db_term in alignment_dict.items():
+            alignment_context += f"- \"{nl_term}\" refers to \"{db_term}\"\n"
+        alignment_context += "\n"
+    
+    # Select prompt template based on ptype
+    if ptype == 0:
+        system_prompt = "You are a helpful assistant that translates natural language questions about a flight database into SQL queries."
+        
+        if k == 0:
+            prompt = f"{system_prompt}\n\n{schema_context}{alignment_context}Translate the following natural language instruction into a SQL query:\n\n{sentence}\n\nOutput only the SQL Query. SQL:"
+        else:
+            prompt = f"{system_prompt}\n\n{schema_context}{alignment_context}Here are some examples of natural language instructions and their corresponding SQL queries:\n\n"
+            
+            # Generate k random examples (could be smarter with example selection)
+            indices = random.sample(range(len(train_x)), k)
+            for idx in indices:
+                prompt += f"Instruction: {train_x[idx]}\nSQL: {train_y[idx]}\n\n"
+            
+            prompt += f"Now translate this new instruction into a SQL query:\n\nInstruction: {sentence}\n\nOutput only the SQL Query. SQL:"
+    #different prompt type
+    elif ptype == 1:
+        system_prompt = "You are a database expert tasked with converting natural language questions into correct SQL queries for a flight database."
+        
+        if k == 0:
+            prompt = f"{system_prompt}\n\n{schema_context}{alignment_context}TASK: Convert the natural language question below into a valid SQL query.\n\n- Make sure your query is valid SQL syntax\n- Output just the SQL query without any explanations\n- Use only tables and columns that exist in the database schema\n- Use the provided term mappings to convert natural language terms to database terms\n\nQuestion: {sentence}\n\nSQL Query:"
+        else:
+            prompt = f"{system_prompt}\n\n{schema_context}{alignment_context}TASK: Convert natural language questions into valid SQL queries.\n\nHere are {k} examples:\n\n"
+            
+            # Generate k random examples
+            indices = random.sample(range(len(train_x)), k)
+            for idx in indices:
+                prompt += f"Question: {train_x[idx]}\nSQL Query: {train_y[idx]}\n\n"
+            
+            prompt += f"Now convert this question into a SQL query:\n\nQuestion: {sentence}\n\nOutput only the SQL Query:"
+    
+    return prompt
 
 
 def exp_kshot(tokenizer, model, inputs, k):
@@ -138,6 +190,14 @@ def main():
     experiment_name = args.experiment_name
 
     set_random_seeds(args.seed)
+
+    # Load database schema
+    schema_path = os.path.join(data_folder, 'flight_database.schema')
+    schema_info = read_schema(schema_path)
+    
+    # Load alignment data
+    alignment_path = os.path.join(data_folder, 'alignment.txt')
+    alignment_dict = load_alignment_data(alignment_path)
 
     data_folder = 'data'
     train_x, train_y, dev_x, dev_y, test_x = load_prompting_data(data_folder)
