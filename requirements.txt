@@ -8,7 +8,6 @@ tqdm==4.66.1
 pytest==7.4.4
 hypothesis==6.96.1
 wandb==0.15.10
-matplotlib==3.8.0
-plotly==5.18.0
+matplotlib==3.8.0s
 bitsandbytes==0.43.1
 sentencepiece==0.2.0
