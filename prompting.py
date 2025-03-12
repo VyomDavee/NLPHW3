@@ -1,6 +1,6 @@
 import os, argparse, random
 from tqdm import tqdm
-
+import re
 import torch
 from transformers import GemmaTokenizerFast, GemmaForCausalLM
 from transformers import GemmaTokenizer, AutoModelForCausalLM
@@ -102,7 +102,7 @@ def create_prompt(sentence, k, ptype=0, train_x=None, train_y=None, schema_info=
     return prompt
 
 
-def exp_kshot(tokenizer, model, inputs, k):
+def exp_kshot(tokenizer, model, inputs, k, ptype=0, train_x=None, train_y=None, schema_info=None, alignment_dict=None):
     '''
     k-shot prompting experiments using the provided model and tokenizer. 
     This function generates SQL queries from text prompts and evaluates their accuracy.
@@ -118,17 +118,39 @@ def exp_kshot(tokenizer, model, inputs, k):
     raw_outputs = []
     extracted_queries = []
 
-    for i, sentence in tqdm(enumerate(inputs)):
-        prompt = create_prompt(sentence, k) # Looking at the prompt may also help
+    for i, sentence in tqdm(enumerate(inputs), total=len(inputs), desc=f"{k}-shot prompting"):
+        prompt = create_prompt(sentence, k, ptype, train_x, train_y, schema_info, alignment_dict)
 
         input_ids = tokenizer(prompt, return_tensors="pt").to(DEVICE)
-        outputs = model.generate(**input_ids, max_new_tokens=MAX_NEW_TOKENS) # You should set MAX_NEW_TOKENS
-        response = tokenizer.decode(outputs[0]) # How does the response look like? You may need to parse it
+        with torch.no_grad():
+            outputs = model.generate(
+                **input_ids, 
+                max_new_tokens=128,
+                do_sample=False,
+                temperature=0.7,
+                num_beams=3,
+                pad_token_id=tokenizer.eos_token_id
+            )
+
+        response = tokenizer.decode(outputs[0][input_ids.input_ids.shape[1]:], skip_special_tokens=True)
         raw_outputs.append(response)
 
-        # Extract the SQL query
         extracted_query = extract_sql_query(response)
-        extracted_queries.append(extracted_query)
+
+        # Apply term substitutions based on alignment dictionary
+        processed_query = extracted_query
+        if alignment_dict:
+            for nl_term, db_term in alignment_dict.items():
+                processed_query = re.sub(r'\b' + re.escape(nl_term) + r'\b', db_term, processed_query, flags=re.IGNORECASE)
+        
+        extracted_queries.append(processed_query)
+        
+        # Print the first few examples for debugging
+        if i < 2:
+            print(f"\nExample {i}:")
+            print(f"Instruction: {sentence}")
+            print(f"Generated SQL: {processed_query}")
+    
     return raw_outputs, extracted_queries
 
 
@@ -138,7 +160,18 @@ def eval_outputs(eval_x, eval_y, gt_sql_pth, model_sql_path, gt_record_path, mod
 
     Add/modify the arguments and code as needed.
     '''
-    # TODO
+    # Compute metrics using the utility functions
+    sql_em, record_em, record_f1, model_error_msgs = compute_metrics(
+        gt_sql_pth, 
+        model_sql_path, 
+        gt_record_path, 
+        model_record_path
+    )
+    
+    # Calculate error rate
+    error_count = sum(1 for msg in model_error_msgs if msg)
+    error_rate = error_count / len(model_error_msgs) if model_error_msgs else 0
+    
     return sql_em, record_em, record_f1, model_error_msgs, error_rate
 
 
@@ -191,6 +224,7 @@ def main():
 
     set_random_seeds(args.seed)
 
+    data_folder = 'data'
     # Load database schema
     schema_path = os.path.join(data_folder, 'flight_database.schema')
     schema_info = read_schema(schema_path)
@@ -198,9 +232,10 @@ def main():
     # Load alignment data
     alignment_path = os.path.join(data_folder, 'alignment.txt')
     alignment_dict = load_alignment_data(alignment_path)
+    print(f"Loaded {len(alignment_dict)} term mappings from alignment file")
 
-    data_folder = 'data'
     train_x, train_y, dev_x, dev_y, test_x = load_prompting_data(data_folder)
+    os.makedirs('logs', exist_ok=True)
 
     # Model and tokenizer
     tokenizer, model = initialize_model_and_tokenizer(model_name, to_quantize)
@@ -208,33 +243,40 @@ def main():
     for eval_split in ["dev", "test"]:
         eval_x, eval_y = (dev_x, dev_y) if eval_split == "dev" else (test_x, None)
 
-        raw_outputs, extracted_queries = exp_kshot(tokenizer, model, eval_x, k)
+        raw_outputs, extracted_queries = exp_kshot(
+            tokenizer, model, eval_x, shot, ptype, train_x, train_y, schema_info, alignment_dict
+        )
 
         # You can add any post-processing if needed
         # You can compute the records with `compute_records``
 
-        gt_query_records = f"records/{eval_split}_gt_records.pkl"
-        gt_sql_path = os.path.join(f'data/{eval_split}.sql')
-        gt_record_path = os.path.join(f'records/{eval_split}_gt_records.pkl')
-        model_sql_path = os.path.join(f'results/gemma_{experiment_name}_dev.sql')
-        model_record_path = os.path.join(f'records/gemma_{experiment_name}_dev.pkl')
-        sql_em, record_em, record_f1, model_error_msgs, error_rate = eval_outputs(
-            eval_x, eval_y,
-            gt_path=gt_sql_path,
-            model_path=model_sql_path,
-            gt_query_records=gt_query_records,
-            model_query_records=model_record_path
-        )
-        print(f"{eval_split} set results: ")
-        print(f"Record F1: {record_f1}, Record EM: {record_em}, SQL EM: {sql_em}")
-        print(f"{eval_split} set results: {error_rate*100:.2f}% of the generated outputs led to SQL errors")
-
-        # Save results
-        # You can for instance use the `save_queries_and_records` function
-
-        # Save logs, if needed
-        log_path = "" # to specify
-        save_logs(log_path, sql_em, record_em, record_f1, model_error_msgs)
+        # Save the generated queries
+        model_sql_path = os.path.join(f'results/{model_name}_{ptype}_{shot}shot_{experiment_name}_{eval_split}.sql')
+        model_record_path = os.path.join(f'records/{model_name}_{ptype}_{shot}shot_{experiment_name}_{eval_split}.pkl')
+        
+        # Save the generated queries and compute their records
+        save_queries_and_records(extracted_queries, model_sql_path, model_record_path)
+        
+        # Evaluate the results, only for dev since answers are available
+        if eval_split == "dev":
+            gt_sql_path = os.path.join(f'data/{eval_split}.sql')
+            gt_record_path = os.path.join(f'records/{eval_split}_gt_records.pkl')
+            
+            sql_em, record_em, record_f1, model_error_msgs, error_rate = eval_outputs(
+                eval_x, eval_y,
+                gt_sql_path,
+                model_sql_path,
+                gt_record_path,
+                model_record_path
+            )
+            
+            print(f"{eval_split} set results: ")
+            print(f"Record F1: {record_f1:.4f}, Record EM: {record_em:.4f}, SQL EM: {sql_em:.4f}")
+            print(f"{error_rate*100:.2f}% of the generated outputs led to SQL errors")
+            
+            # Save logs
+            log_path = f'logs/{model_name}_{ptype}_{shot}shot_{experiment_name}_{eval_split}.log'
+            save_logs(log_path, sql_em, record_em, record_f1, model_error_msgs)
 
 
 if __name__ == "__main__":

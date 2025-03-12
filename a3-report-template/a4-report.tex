@@ -1,0 +1,300 @@
+\documentclass{article}
+
+\input{header}
+
+\title{CSE 5525: Assignment 3}
+
+\author{Full Name}
+
+\date{}
+
+
+\colmfinalcopy
+\begin{document}
+\maketitle
+
+
+\section{Data Statistics and Processing (8pt)}
+\paragraph{Instructions:} Use \autoref{tab:data_stats_before} and \autoref{tab:data_stats_after} to describe the data statistics before and after any pre-processing respectively. 
+Use the T5 tokenizer to report the statistics. 
+For the statistics after pre-processing, if you did different pre-processing for different models, you need to indicate them separately.
+The gray text in each row is there to guide you and should be removed in your submitted report.
+Depending on your pre-processing, some numbers may be identical across tables. 
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Statistics Name & Train & Dev \\
+\midrule
+Number of examples & \textcolor{gray}{XXX} & \textcolor{gray}{XXX} \\
+Mean sentence length & \textcolor{gray}{XXX}& \textcolor{gray}{XXX} \\
+Mean SQL query length & \textcolor{gray}{XXX}& \textcolor{gray}{XXX}  \\
+Vocabulary size (natural language)& \textcolor{gray}{XXX}& \textcolor{gray}{XXX}  \\
+Vocabulary size (SQL)& \textcolor{gray}{XXX}& \textcolor{gray}{XXX}  \\
+\bottomrule
+\end{tabular}
+\caption{Data statistics before any pre-processing. \textcolor{gray}{You need to at least provide the statistics listed above, and can add new entries.}}
+\label{tab:data_stats_before}
+\end{table}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lcc}
+\toprule
+Statistics Name & Train & Dev \\
+\midrule
+\multicolumn{3}{l}{\textbf{Model name}} \\ % \textcolor{gray}{(T5 fine-tuning or T5 from scratch)}} \\
+\textcolor{gray}{Statistics Name} & \textcolor{gray}{XXX}& \textcolor{gray}{XXX} \\
+\midrule
+\multicolumn{3}{l}{\textbf{Model name}} \\ % \textcolor{gray}{(T5 fine-tuning or T5 from scratch)}} \\
+\textcolor{gray}{Statistics Name} & \textcolor{gray}{XXX}& \textcolor{gray}{XXX} \\
+\bottomrule
+\end{tabular}
+\caption{Data statistics after pre-processing. \textcolor{gray}{You need to at least provide the statistics listed in \autoref{tab:data_stats_before} (except for the number of lines), and can add new entries.}}
+\label{tab:data_stats_after}
+\end{table}
+
+
+
+\newpage
+
+
+
+
+\section{T5 Fine-tuning and Training From Scratch (8pt)}\label{sec:t5}
+\paragraph{Instructions:} Use \autoref{tab:t5_results_ft} and \autoref{tab:t5_results_scratch} to describe your data processing steps (if any) and the implementation details, respectively for the fine-tuned T5 model, and the T5 model trained from scratch.
+The gray text in each row is there to guide you and should be removed in the submitted report. 
+Be clear enough that we can replicate your approach in PyTorch using only your descriptions.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{p{3.5cm}p{10cm}}
+\toprule
+Design choice & Description \\
+\midrule
+Data processing & \textcolor{gray}{Describe the data processing steps you undertook, if any.} \\
+Tokenization & \textcolor{gray}{Describe how you did the tokenization for the inputs to the encoder and decoder. If you use anything else than the default T5 tokenizer, specify what you use, and why you choose to use it.} \\
+Architecture & \textcolor{gray}{Describe the components in the T5 architecture that you chose to fine-tune. Did you fine-tune the entire model, specific layers?} \\
+Hyperparameters & \textcolor{gray}{List the key hyperparameters that you used, including the learning rate, batch size, and stopping criteria.} \\
+\bottomrule
+\end{tabular}
+\caption{Details of the best-performing T5 model configurations (fine-tuned)}
+\label{tab:t5_results_ft}
+\end{table}
+
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{p{3.5cm}p{10cm}}
+\toprule
+Design choice & Description \\
+\midrule
+Data processing & \textcolor{gray}{Describe the data processing steps you undertook, if any.} \\
+Tokenization & \textcolor{gray}{Describe how you did the tokenization for the inputs to the encoder and decoder. If you use anything else than the default T5 tokenizer, specify what you use, and why you choose to use it.} \\
+Hyperparameters & \textcolor{gray}{List the key hyperparameters that you used, including the learning rate, batch size, and stopping criteria.} \\
+\bottomrule
+\end{tabular}
+\caption{Details of the best-performing T5 model configurations (from scratch)}
+\label{tab:t5_results_scratch}
+\end{table}
+
+
+\newpage
+
+
+
+\section{Large Language Model (LLM) Prompting (14pt)}\label{sec:llm}
+
+\subsection{In-Context Learning (ICL)}\label{sec:llm:icl}
+
+\paragraph{Instructions:} Provide in \autoref{tab:icl_prompts} the instruction prompt(s) that you used for ICL.
+
+If the prompt you used for zero- and few-shot prompting is identical, except for the examples, there's no need to repeat it. 
+If you made small modifications between zero- and few-shot, please provide them separately.
+For all entries, you need to specify the corresponding values of $k$.
+
+
+
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{p{1cm}p{12cm}}
+\toprule
+\textbf{Shot} & \textbf{Prompt} \\
+\midrule
+    \textcolor{gray}{k} & \textcolor{gray}{Everything in this table serves as a placeholder to show an example of prompt and formatting. It is just for reference, and you need to remove all the text here and put your own prompt.} \\
+    & \textcolor{gray}{You can design and experiment with different prompts to find what works better. In the prompt, it could be helpful to provide clear instructions, provide the relevant context, and you can also provide examples. You need to experiment with different numbers of examples. In this prompt, two examples are provided below ($k = 2$, and this is 2-shot prompting):} \\
+    & \textcolor{gray}{Instruction: [instruction-sentence]} \\
+    & \textcolor{gray}{Response: [response]} \\
+    & \textcolor{gray}{Instruction: [instruction-sentence]} \\
+    & \textcolor{gray}{Response: [response]} \\
+    & \\
+    & \textcolor{gray}{You can choose to provide additional instruction or not before providing the instruction to the model as well. Below is the task that you are asking the model to perform:} \\
+    & \textcolor{gray}{Instruction: [instruction-sentence]} \\
+    & \textcolor{gray}{Response: } \\
+\bottomrule
+\end{tabular}
+\caption{Instruction prompts used for zero- and/or few-shot prompting.}
+\label{tab:icl_prompts}
+\end{table}
+
+
+\paragraph{Example selections:} Please provide a clear, detailed, and succinct description of how you selected the examples when $k > 0$.
+
+\textcolor{gray}{Remove this text and place your description here!}
+
+
+
+\newpage
+
+
+
+\subsection{Best Prompt and Ablation Study}
+
+
+
+\paragraph{Instructions:} Report the best prompt you used in \autoref{tab:best_prompt}.
+If the best prompt you used is the same as the one specified in \autoref{tab:icl_prompts}, you can just copy the best prompt and label it.
+If it is different (e.g. you designed another prompt that is better), you should clearly describe how you created it and what are the methods you used in the caption.
+
+You will also need to clearly and succintly describe in \autoref{tab:ablation_explanation} the ablation experiments that you performed by removing different parts of the prompt.
+For that, you need to first highlight the parts of the prompt that you ablated for each experiment in a distinct color\footnote{\url{https://www.overleaf.com/learn/latex/Using_colors_in_LaTeX}}, as shows the placeholder example in \autoref{tab:icl_prompts}, and second, provide the description by referring to the highlighted part.
+When reporting your results in \autoref{tab:results}, you will need to refer to your ablations variants.
+
+
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{p{13.5cm}}
+\toprule
+\textbf{Prompt} \\
+\midrule
+    \textcolor{gray}{Everything in this table serves as a placeholder to show an example of prompt and formatting. It is just for reference, and you need to remove all the text here and put your own prompt.} \\
+    \textcolor{gray}{You can design and experiment with different prompts to find what works better.} \textcolor{ForestGreen}{In the prompt, it could be helpful to provide clear instructions, provide the relevant context, and you can also provide examples.} \textcolor{gray}{You need to experiment with different numbers of examples. In this prompt, two examples are provided below ($k = 2$, and this is 2-shot prompting):} \\
+   \textcolor{gray}{Instruction: [instruction-sentence]} \\
+    \textcolor{gray}{Response: [response]} \\
+    \textcolor{gray}{Instruction: [instruction-sentence]} \\
+    \textcolor{gray}{Response: [response]} \\
+    \\
+   \textcolor{Blue}{You can choose to provide additional instruction or not before providing the instruction to the model as well. Below is the task that you are asking the model to perform:} \\
+    \textcolor{gray}{Instruction: [instruction-sentence]} \\
+    \textcolor{gray}{Response: } \\
+\bottomrule
+\end{tabular}
+\caption{The best prompt.
+{\textcolor{gray}{Remove this text and place a short description of your best prompt. If it is the same as the prompt in \autoref{tab:icl_prompts}, clearly mention the value of $k$. If it is not the same, state explicitly how you built it.}}
+}
+\label{tab:best_prompt}
+\end{table}
+
+
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{p{2cm}p{10cm}}
+\toprule
+\textbf{Color} & \textbf{Description} \\
+\midrule
+\textcolor{ForestGreen}{ForestGreen} & \textcolor{ForestGreen}{This is the description for the ablation experiment where the part in ForestGreen is ablated from the best prompt.} \\
+\textcolor{Blue}{Blue} & \textcolor{Blue}{This is the description for the ablation experiment where the part in Blue is ablated from the best prompt.} \\
+& \textcolor{Blue}{In the ablation experiment, we experimented with swapping the order of both sentences, because...} \\
+% \midrule
+\bottomrule
+\end{tabular}
+\caption{Ablation variants.
+{\textcolor{gray}{Put a clear description of the ablation experiments you did. If it helps to describe more clearly, you can also provide an example of the relevant part of the prompt before and after the ablation.}
+}}
+\label{tab:ablation_explanation}
+\end{table}
+
+
+
+\newpage
+
+
+
+\section{Results and Analysis (20pt)}
+
+\paragraph{Quantitative Results:} Use \autoref{tab:results} to report your test and development set results. 
+Your test results should match with the results on gradescope. 
+For the development set, you should also report results from experiments you conducted to arrive at your final configuration.
+When reporting experiments, you should replace "variant" with brief and meaningful descriptions of whatever hyperparameter or setting that you varied. 
+For ICL, you should specify what is the parameter $k$ used, and what the full model corresponds to. For T5, the full model refers to the best model you described in Section \ref{sec:t5}.
+For T5, if you experimented with different design choices, you can add rows specifying the variants and what you tried.
+The text in gray is only for example purpose, and should be removed and replaced with your own choices.
+You may add more rows if needed.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lcc}
+  \toprule
+  System & Query EM & F1 score\\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Dev Results}} \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{LLM Prompting}} \\
+  Full model & XX.XX & XX.XX \\ 
+  Variant1 \textcolor{gray}{(e.g. ICL, $k$ = $...$)} & XX.XX & XX.XX \\
+  Variant2 \textcolor{gray}{(e.g. ICL, $k$ = $...$)} & XX.XX & XX.XX \\
+  Variant3 \textcolor{ForestGreen}{(e.g. ablating the explanation sentence in \autoref{tab:best_prompt})} & XX.XX & XX.XX \\
+  Variant4 \textcolor{Blue}{(e.g. ablating by doing ... in \autoref{tab:best_prompt})} & XX.XX & XX.XX \\
+  Variant & XX.XX & XX.XX \\[5pt]
+  \multicolumn{3}{l}{\textbf{T5 fine-tuned}} \\
+  Full model & XX.XX & XX.XX \\[5pt]
+  % Variant1 & XX.XX & XX.XX \\
+  % Variant2 & XX.XX & XX.XX \\
+  % Variant3 & XX.XX & XX.XX \\
+  \multicolumn{3}{l}{\textbf{T5 from scratch}} \\
+  Full model & XX.XX & XX.XX \\ 
+  % Variant1 & XX.XX & XX.XX \\
+  % Variant2 & XX.XX & XX.XX \\
+  % Variant3 & XX.XX & XX.XX \\
+  \midrule
+  \multicolumn{3}{l}{\textbf{Test Results}} \\
+  \midrule
+  ICL & XX.XX & XX.XX \\ 
+  T5 fine-tuning & XX.XX & XX.XX \\
+  T5 from scratch & XX.XX & XX.XX \\
+  \bottomrule
+\end{tabular}  
+\caption{Development and test results. \textcolor{gray}{Use this table to report quantitative results for both dev and test results, for all the three models.}}
+\label{tab:results}
+\end{table}
+
+
+\paragraph{ICL sensitivity to $k$:} For ICL, please provide a plot of the Record F1 on the development set that the model achieved with different values of $k$. The x-axis should be $k$, and the y-axis the Record F1. The prompts and examples used for this plot should correspond to the ones you described in Subsection \ref{sec:llm:icl}.
+
+\textcolor{gray}{Remove this text and place your plot here!}
+
+\newpage
+
+\paragraph{Qualitative Error Analysis:} Conduct a detailed error analysis for each of the three models. Identify common error types and discuss possible reasons for these errors in \autoref{tab:qualitative}.
+
+You must identify at least three classes of errors for the queries, and use examples to illustrate them.
+It must be clear what model makes the errors you are analyzing. 
+If you identified the same type of error for different models, you don't need to duplicate the descriptions, but you need to clearly specify an example for each of the model, indicate the statistics for each model, and specify to which model each statistics correspond to.
+You may add more rows to the table.
+
+
+\begin{landscape}
+\begin{table}
+  \centering
+  \begin{tabular}{p{2cm}p{2cm}p{6cm}p{6cm}p{6cm}}
+    \toprule
+    \textbf{Error Type} & \textbf{Relevant Models}& \textbf{Example Of Error} & \textbf{Error Description} & \textbf{Statistics} \\
+    \midrule
+    \textcolor{gray}{Error name} & \textcolor{gray}{ICL, T5 fine-tuned or T5 from scratch} & \textcolor{gray}{Snippet from datapoint examplifying error} & \textcolor{gray}{Describe the error in natural language} & \textcolor{gray}{Provide statistics in the form ``COUNT/TOTAL'' on the prevalence of the error. TOTAL is the number of relevant examples (e.g. number of queries, for query-level error), and COUNT is the number of examples that showed this error.}  \\
+    & & & & \textcolor{gray}{If an error type applies to several models, you should provide the statistics in the form ``MODEL NAME: COUNT/TOTAL''.} \\
+    \midrule
+    &  &  &  & \\
+    \bottomrule
+  \end{tabular}
+  \label{tab:qualitative}
+  \caption{Use this table for your qualitative analysis on the dev set, for all the three models.}\label{tab:qualitative}
+\end{table}
+\end{landscape}
+
+
+
+\end{document}
